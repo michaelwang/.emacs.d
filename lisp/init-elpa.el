@@ -234,12 +234,7 @@
    
 )
 
-(use-package eglot
-  :hook ((java-mode) . eglot-ensure)
-  
-  :bind ("C-c e f" . eglot-ensure)
-  :bind ("C-c c a" . eglot-code-actions)
-  :bind ("C-c c r" . eglot-rename)    
+(use-package eglot  
   :config
   ;;;(foo-mode 1)
   (add-to-list 'eglot-server-programs
@@ -248,17 +243,27 @@
                            "-data" , (expand-file-name (md5 (project-root (eglot--current-project)))
 						       (locate-user-emacs-file
 							"eglot-eclipse-jdt-cache")))
-	       `((js-mode . ("vscode-eslint-language-server" "--stdio")))
+
+	       `((js-mode . ("vscode-eslint-language-server" "--stdio")))	       
 	       ;;;`(vue-mode . (eglot-vls . ("vls" "--stdio")))
-	       ))
+	       )
+  ;; configure clangd for c++ and c
+  (when-let* ((clangd (seq-find #'executable-find '("clangd")))
+    ;; this has to match the tool string in compile-commands.json
+    ;; clangd will then use these tools to get system header paths
+              (init-args "--enable-config"))
+    (add-to-list 'eglot-server-programs
+                 `((c++-mode c-mode) ,clangd ,init-args)))
+  
+  :hook ((java-mode) . eglot-ensure)
+  :hook ((c-mode) . eglot-ensure)
+  :hook ((python-mode) . eglot-ensure)    
+  :bind ("C-c e f" . eglot-ensure)
+  :bind ("C-c c a" . eglot-code-actions)
+  :bind ("C-c c r" . eglot-rename)  
+)
 	       ;; `(vue-mode "vls" "--stdio")))
 
-
-;;; setup python eglot plugin
-(use-package python-mode
-  :ensure nil
-  :hook
-  (python-mode . eglot-ensure))
 
 ;;; Setup specific to the Eclipse JDT setup in case one can't use the simpler 'jdtls' script
 
