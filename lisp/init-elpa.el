@@ -418,5 +418,13 @@
 
 ;; for python venv auto load 
 
+(unless (package-installed-p 'pet)
+    (package-refresh-contents)
+    (package-install 'pet))
+
+(use-package pet
+  :config
+  (add-hook 'python-base-mode-hook 'pet-mode -10))
+
 
 (provide 'init-elpa)
