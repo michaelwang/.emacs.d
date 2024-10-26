@@ -16,3 +16,5 @@ tramp
 transient/
 tutorial/
 url/
+session.*
+**/#*.*#

@@ -259,8 +259,9 @@
   :hook ((c-mode) . eglot-ensure)
   :hook ((python-mode) . eglot-ensure)    
   :bind ("C-c e f" . eglot-ensure)
-  :bind ("C-c c a" . eglot-code-actions)
-  :bind ("C-c c r" . eglot-rename)  
+  :bind ("C-c e a" . eglot-code-actions)
+  :bind ("C-c e r" . eglot-rename)
+  :bind ("C-c e f" . eglot-format)    
 )
 	       ;; `(vue-mode "vls" "--stdio")))
 
@@ -287,7 +288,7 @@
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 
 ;;(add-hook 'project-find-functions #'project-find-go-module)
-(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
+;;(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
 (add-hook 'java-mode-hook #'eglot-format-buffer-on-save)
 
 ;; eglot依赖project组件寻找工程文件 但是会存在两个问题
@@ -381,13 +382,14 @@
 
   (put 'typescript-tsx-mode 'eglot-language-id "typescriptreact")
 
-  (defun akirak/eglot-setup-buffer ()
-    (if (eglot-managed-p)
-        (add-hook 'before-save-hook #'eglot-format-buffer nil t)
-      (remove-hook 'before-save-hook #'eglot-format-buffer t)))
+  ;;(defun akirak/eglot-setup-buffer ()
+  ;;  (if (eglot-managed-p)
+  ;;      (add-hook 'before-save-hook #'eglot-format-buffer nil t)
+  ;;    (remove-hook 'before-save-hook #'eglot-format-buffer t)))
 
-  :hook
-  (eglot-managed-mode . akirak/eglot-setup-buffer))
+  ;;:hook
+  ;;(eglot-managed-mode . akirak/eglot-setup-buffer)
+)
 
 (add-hook 'typescript-tsx-mode-hook 'eglot-ensure)
 
