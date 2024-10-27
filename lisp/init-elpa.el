@@ -173,86 +173,22 @@
 )
 
 
-
-;; (add-to-list 'eglot-server-programs '(js-mode . ("vscode-eslint-language-server" "--stdio")))
-
-(with-eval-after-load 'eglot
-  ;; Define said class and its methods
-   (message "file : %s" (expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml")))
-   (puthash 'java-mode
-           `(:settings
-             (:java
-              (:configuration
-               (:runtime [(:name "JavaSE-17" :path "/usr/lib/jvm/java-1.17.0-openjdk-amd64" :default t)
-                          (:name "JavaSE-8" :path "/usr/lib/jvm/java-1.8.0-openjdk-amd64")])
-               :format (:settings (:url ,(expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml"))
-                                        :profile "GoogleStyle")))))
-	   +eglot/initialization-options-map)
-   (puthash 'java-ts-mode
-           `(:settings
-             (:java
-              (:configuration
-               (:runtime [(:name "JavaSE-17" :path "/usr/lib/jvm/java-1.17.0-openjdk-amd64" :default t)
-                          (:name "JavaSE-8" :path "/usr/lib/jvm/java-1.8.0-openjdk-amd64")])
-               :format (:settings (:url ,(expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml"))
-                                        :profile "GoogleStyle")))))
-	   +eglot/initialization-options-map)
-   
-   (cl-defmethod eglot-initialization-options (server)
-    (message "server 1: %s"  (eglot--major-modes server))
-    (message "server 2: %s" (gethash 'java-mode +eglot/initialization-options-map))
-    (message "server 3: %s" +eglot/initialization-options-map)    
-    (if-let ((init-options (gethash 'java-mode +eglot/initialization-options-map)))
-        init-options
-      eglot--{})
-    (if-let ((init-options (gethash 'java-ts-mode +eglot/initialization-options-map)))
-        init-options
-      eglot--{}))
-
-    (defclass eglot-vls (eglot-lsp-server) ()
-      :documentation "Vue Language Server.")
-    (cl-defmethod eglot-initialization-options ((server eglot-vls))
-     "Passes through required vetur initialization options to VLS."
-     '(:vetur
-       (:completion
-	(:autoImport t :useScaffoldSnippets t :tagCasing "kebab")
-	:grammar
-	(:customBlocks
-	 (:docs "md" :i18n "json"))
-	:validation
-	(:template t :style t :script t)
-	:format
-	(:options
-	 (:tabSize 2 :useTabs :json-false)
-	 :defaultFormatter
-	 (:html "prettyhtml" :css "prettier" :postcss "prettier" :scss "prettier" :less "prettier" :stylus "stylus-supremacy" :js "prettier" :ts "prettier")
-	 :defaultFormatterOptions
-	 (:js-beautify-html
-	  (:wrap_attributes "force-expand-multiline")
-	  :prettyhtml
-	  (:printWidth 100 :singleQuote :json-false :wrapAttributes :json-false :sortAttributes :json-false))
-	 :styleInitialIndent :json-false :scriptInitialIndent :json-false)
-	:trace
-	(:server "verbose")
-	:dev
-	(:vlsPath ""))
-    ))
-   
-)
+;; fix indentation problem. emacs will override the size of indentation of check-style.xml
+;; Emacsはタプを８スペース幅で表示しますが、標準てきなスタイルでは四スペース幅で表示されることが多いため、次のコマンドで設定を変更できます
+(add-hook 'java-mode-hook (lambda () (setq tab-width 4)))
 
 (use-package eglot  
   :config
-  ;;;(foo-mode 1)
   (add-to-list 'eglot-server-programs
-	       `(java-mode "jdtls"
-                           "-configuration" ,(expand-file-name "cache/language-server/java/jdtls/config_linux" user-emacs-directory)
-                           "-data" , (expand-file-name (md5 (project-root (eglot--current-project)))
-						       (locate-user-emacs-file
-							"eglot-eclipse-jdt-cache")))
-
 	       `((js-mode . ("vscode-eslint-language-server" "--stdio")))	       
-	       ;;;`(vue-mode . (eglot-vls . ("vls" "--stdio")))
 	       )
+  (add-to-list 'eglot-server-programs  `(java-mode . ("jdtls" :initializationOptions
+  						      (:settings
+  						       (:java
+   						       (:format (:enabled t :settings (:url ,(expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml"))
+   											    :profile "GoogleStyle")									    
+									  )))
+   						      :extendedClientCapabilities (:classFileContentsSupport t)))))
   ;; configure clangd for c++ and c
   (when-let* ((clangd (seq-find #'executable-find '("clangd")))
     ;; this has to match the tool string in compile-commands.json
@@ -293,9 +229,16 @@
 (defun eglot-format-buffer-on-save ()
   (add-hook 'before-save-hook #'eglot-format-buffer -10 t))
 
-;;(add-hook 'project-find-functions #'project-find-go-module)
-;;(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
+(add-hook 'project-find-functions #'project-find-go-module)
+(add-hook 'go-mode-hook #'eglot-format-buffer-on-save)
 (add-hook 'java-mode-hook #'eglot-format-buffer-on-save)
+;;変量eglot-signal-didChangeConfigurationは、追加の設定コマンドをサーバに送信するためのものです、しかし、jdtlsは追加設定をサポートしていないため、最初の設定時にこのコマンドが削除されます。以降、追加コマンドは送信されません。
+;; https://github.com/joaotavora/eglot/discussions/1222
+(add-hook 'java-mode-hook (lambda ()
+   (remove-hook 'eglot-connect-hook 'eglot-signal-didChangeConfiguration t)))
+
+(setq column-number-mode t)
+
 
 ;; eglot依赖project组件寻找工程文件 但是会存在两个问题
 ;; 1. 对于多模块的工程（java或者go）不能正确识别出工程的根目录
@@ -323,8 +266,6 @@
 
 (add-hook 'go-mode-hook 'eglot-ensure)
 
-
-
 ;; snippt
 (unless (package-installed-p 'yasnippet)
   (package-refresh-contents)
@@ -344,14 +285,7 @@
     (package-install 'vue-mode))
 
 
-;; install git
-;;(unless (package-installed-p 'git)
-;;  (package-refresh-contents)
-;;  (package-install 'git))
-
-;;(require 'git) //this package is to old, can not run 
-
-;;(setq package-check-signature nil)
+;; package-refresh-contentsを実行する際に、ディジタル証明書の確認が行われ、エラーが発生場合は、次のコマンドで解決するできる
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 (unless (package-installed-p 'gnu-elpa-keyring-update)
   (package-refresh-contents)
@@ -386,11 +320,9 @@
 
 (use-package eglot
   :ensure t
-
   :config
   (add-to-list 'eglot-server-programs
                '(svelte-mode . ("svelteserver" "--stdio")))
-
   (put 'typescript-tsx-mode 'eglot-language-id "typescriptreact")
 
   ;;(defun akirak/eglot-setup-buffer ()
