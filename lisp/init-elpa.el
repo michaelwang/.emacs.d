@@ -5,10 +5,16 @@
 
 
 ;; 定义是否启用国内的镜像下载插件
+;;(setq package-archives
+;;      '(("melpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
+;;        ("gnu" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
+;;        ("org" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/org/")))
+
 (setq package-archives
-      '(("melpa" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/melpa/")
-        ("gnu" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/gnu/")
-        ("org" . "https://mirrors.tuna.tsinghua.edu.cn/elpa/org/")))
+      '(("melpa" . "https://melpa.org/packages/")
+        ("melpa-stable" . "https://stable.melpa.org/packages/")
+        ("org" . "https://orgmode.org/elpa/")
+        ("gnu" . "https://elpa.gnu.org/packages/")))
 
 ;;(setq package-check-signature t) 
 
@@ -345,6 +351,11 @@
 
 ;;(require 'git) //this package is to old, can not run 
 
+;;(setq package-check-signature nil)
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
+(unless (package-installed-p 'gnu-elpa-keyring-update)
+  (package-refresh-contents)
+  (package-install 'gnu-elpa-keyring-update))
 
 (unless (package-installed-p 'magit)
   (package-refresh-contents)
@@ -424,9 +435,9 @@
     (package-refresh-contents)
     (package-install 'pet))
 
-(use-package pet
-  :config
-  (add-hook 'python-base-mode-hook 'pet-mode -10))
+;;(use-package pet
+;;  :config
+;;  (add-hook 'python-base-mode-hook 'pet-mode -10))
 
 
 (provide 'init-elpa)
