@@ -234,8 +234,10 @@
 (add-hook 'java-mode-hook #'eglot-format-buffer-on-save)
 ;;変量eglot-signal-didChangeConfigurationは、追加の設定コマンドをサーバに送信するためのものです、しかし、jdtlsは追加設定をサポートしていないため、最初の設定時にこのコマンドが削除されます。以降、追加コマンドは送信されません。
 ;; https://github.com/joaotavora/eglot/discussions/1222
-(add-hook 'java-mode-hook (lambda ()
-   (remove-hook 'eglot-connect-hook 'eglot-signal-didChangeConfiguration t)))
+;;(add-hook 'java-mode-hook (lambda ()
+;;                            (remove-hook 'eglot-connect-hook 'eglot-signal-didChangeConfiguration t)))
+
+(remove-hook 'eglot-connect-hook 'eglot-signal-didChangeConfiguration)
 
 (setq column-number-mode t)
 
