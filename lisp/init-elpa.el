@@ -182,13 +182,7 @@
   (add-to-list 'eglot-server-programs
 	       `((js-mode . ("vscode-eslint-language-server" "--stdio")))	       
 	       )
-  (add-to-list 'eglot-server-programs  `(java-mode . ("jdtls" :initializationOptions
-  						      (:settings
-  						       (:java
-   						       (:format (:enabled t :settings (:url ,(expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml"))
-   											    :profile "GoogleStyle")									    
-									  )))
-   						      :extendedClientCapabilities (:classFileContentsSupport t)))))
+  
   ;; configure clangd for c++ and c
   (when-let* ((clangd (seq-find #'executable-find '("clangd")))
     ;; this has to match the tool string in compile-commands.json
@@ -205,8 +199,54 @@
   :bind ("C-c e r" . eglot-rename)
   :bind ("C-c e f" . eglot-format)    
 )
-	       ;; `(vue-mode "vls" "--stdio")))
 
+(use-package eglot
+  :config
+  ;;;(foo-mode 1)
+  (add-to-list 'eglot-server-programs
+	       `(java-mode "jdtls"
+                           "-configuration" ,(expand-file-name "cache/language-server/java/jdtls/config_linux" user-emacs-directory)
+                           "-data" , (expand-file-name (md5 (project-root (eglot--current-project)))
+						       (locate-user-emacs-file
+							"eglot-eclipse-jdt-cache"))
+                           ,(concat "--jvm-arg=-javaagent:" (expand-file-name "~/.m2/repository/org/projectlombok/lombok/1.18.24/lombok-1.18.24.jar")))
+	       ;;;`(vue-mode . (eglot-vls . ("vls" "--stdio")))
+	       ))
+
+(with-eval-after-load 'eglot
+  ;; Define said class and its methods
+   (message "file : %s" (expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml")))
+   (puthash 'java-mode
+           `(:settings
+             (:java
+              (:configuration
+               (:runtime [(:name "JavaSE-17" :path "/usr/lib/jvm/java-1.17.0-openjdk-amd64" :default t)
+                          (:name "JavaSE-8" :path "/usr/lib/jvm/java-1.8.0-openjdk-amd64")])
+               :format (:settings (:url ,(expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml"))
+                                        :profile "GoogleStyle")))))
+	   +eglot/initialization-options-map)
+   (puthash 'java-ts-mode
+           `(:settings
+             (:java
+              (:configuration
+               (:runtime [(:name "JavaSE-17" :path "/usr/lib/jvm/java-1.17.0-openjdk-amd64" :default t)
+                          (:name "JavaSE-8" :path "/usr/lib/jvm/java-1.8.0-openjdk-amd64")])
+               :format (:settings (:url ,(expand-file-name (locate-user-emacs-file "cache/eclipse-java-google-style.xml"))
+                                        :profile "GoogleStyle")))))
+	   +eglot/initialization-options-map)
+   
+   (cl-defmethod eglot-initialization-options (server)
+    (message "server 1: %s"  (eglot--major-modes server))
+    (message "server 2: %s" (gethash 'java-mode +eglot/initialization-options-map))
+    (message "server 3: %s" +eglot/initialization-options-map)    
+    (if-let ((init-options (gethash 'java-mode +eglot/initialization-options-map)))
+        init-options
+      eglot--{})
+    (if-let ((init-options (gethash 'java-ts-mode +eglot/initialization-options-map)))
+        init-options
+      eglot--{}))
+   
+)
 
 ;;; Setup specific to the Eclipse JDT setup in case one can't use the simpler 'jdtls' script
 
